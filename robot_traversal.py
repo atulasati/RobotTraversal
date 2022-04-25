@@ -1,4 +1,26 @@
-def robot_traversal():
+import re
+
+AXIS_MAP = {"N": 'y', 'E': 'x', 'S': 'y', 'W':'x'}
+SWAP_LAST_MOVE = {'x': 'y', 'y': 'x'}
+DIRECTION_MAP = {
+    ('R', 'x', 'E'): 'S', 
+    ('R', 'x', 'W'): 'N', 
+    ('R', 'y', 'N'): 'E', 
+    ('R', 'y', 'S'): 'W',
+    ('L', 'x', 'W'): 'S', 
+    ('L', 'x', 'E'): 'N', 
+    ('L', 'y', 'N'): 'W', 
+    ('L', 'y', 'S'): 'E',
+}
+
+MOVES_MAP = {
+    ('x', 'W'): -1, 
+    ('x', 'E'): 1, 
+    ('y', 'N'): 1, 
+    ('y', 'S'): -1,
+}
+
+def get_top_right_cord():
     while True:
         top_right_cord = input('Please Enter top-right coordinates of the rectangular plan : ')
         if top_right_cord and len(top_right_cord.split()) == 2:
@@ -7,7 +29,9 @@ def robot_traversal():
                 n = int(top_right_cord.split(" ")[1])
                 break
             print("\n\tinvalid input")
+    return m, n
 
+def get_x_y_and_direction(m, n):
     while True:
         starting_position = input('Please enter starting position: \nexample: 2 0 E \n')
         if starting_position and len(starting_position.split()) == 3:
@@ -18,80 +42,45 @@ def robot_traversal():
                 if x >= 0 and m >= x and y >= 0 and n >= y:
                     break
                 print('Please enter valid starting position!')
-    
+    return x, y, direction
+
+def get_move_series():
     while True:
-        moves = ""
-        movement = input('Please Enter Series of movement without spaces: \nexample: MLMMLMRM \n')
-        for i in range(len(movement)):    
-            move = movement[i].upper()
-            if move.isalpha():
-                moves += move
-            else:
-                print('Please enter valid series of strings. example: MMLRML')
-        break
+        moves = input('Please Enter Series of movement without spaces: \nexample: MLMMLMRM \n').strip()
+        if bool(re.match('^[A-Z]+$', moves)):
+            break
+        print('Please enter valid series of strings. example: MMLRML')
+    return moves
 
-    if direction == 'N':
-        last_move = 'y'
-    elif direction == 'E':
-        last_move = 'x'
-    elif direction == 'S':
-        last_move = 'y'
-    else:
-        last_move = 'x'
+def robot_traversal():
+    m, n = get_top_right_cord()
+    x, y, direction = get_x_y_and_direction(m, n)
+    moves = get_move_series()
+    traversed_path = []
 
-    path = []
-
-    for i in range(len(movement)):    
-        move = movement[i]
-        path.append((x,y))
-        # If move is left or right, then change direction   
-        if move == 'R' and last_move == 'x':
-            last_move = 'y'
-            if direction == 'E':
-                direction = 'S'
-            else:
-                direction = 'N'
-            
-        elif move == 'R' and last_move == 'y':
-            last_move = 'x'
-            if direction == 'N':
-                direction = 'E'
-            else:
-                direction = 'W'
-
-        elif move == 'L' and last_move == 'y':
-            last_move = 'x'
-            if direction == 'N':
-                direction = 'W'
-            else:
-                direction = 'E'
-            
-        elif move == 'L' and last_move == 'x':
-            last_move = 'y'
-            if direction == 'E':
-                direction = 'N'
-            else:
-                direction = 'S'
-            
-        elif move == 'M':
-            if last_move == 'x' and direction=='E': x += 1
-                
-            elif last_move == 'x' and direction=='W': x -= 1
-            
-            elif last_move == 'y' and direction=='N': y += 1
-
-            elif last_move == 'y' and direction=='S': y -= 1
-                
-            elif x > m or y > n:
-                print('Out of Plane! Please give another series of movement')
-                break
+    last_move = AXIS_MAP[direction]
+    for move in moves:
+        if move in ["L", "R"]:
+            direction = DIRECTION_MAP[(move, last_move, direction)]
+            last_move = AXIS_MAP[direction]
+        else:
+            if last_move == 'x':
+                x += MOVES_MAP[(last_move, direction)]
+            if last_move == 'y':
+                y += MOVES_MAP[(last_move, direction)]
         
-        for i in path:
-            if (x, y) == i:
-                print(f'The ROBOT already travelled the same coordinate: {i}')
-                return int(x), int(y), direction
+        if x<0 or y< 0 or x > m or y > n:
+            print('\nOut of Plane! Please give another series of movement')
+            break
+        
+        if move == "M" and (x,y) in traversed_path:
+            print(f'The ROBOT already travelled the same coordinate: {x,y}')
+            return
+        
+        traversed_path.append((x,y))
 
-    print(int(x), int(y), direction)
-    
+    return f"{x} {y} {direction}"
+
 if __name__ == '__main__':
-    robot_traversal()
+    res = robot_traversal()
+    print(res)
